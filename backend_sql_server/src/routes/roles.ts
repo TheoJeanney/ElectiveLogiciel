@@ -12,6 +12,8 @@ import { authenticateJWT } from '../lib/helper/auth';
 const router = express.Router();
 
 router.get('/', authenticateJWT, async (req, res, next) => {
+  console.log('Get all roles');
+
   const roles = await getAllRoles();
   res.json(roles);
 });

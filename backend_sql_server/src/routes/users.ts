@@ -19,14 +19,21 @@ const refreshTokens = [];
 
 const users = [
   {
-      username: 'john',
-      password: 'password123admin',
-      role: 'admin'
-  }, {
-      username: 'anna',
-      password: 'password123member',
-      role: 'member'
-  }
+    username: 'john',
+    password: 'password123admin',
+    roleId: 'admin',
+  },
+  {
+    username: 'anna',
+    password: 'password123member',
+    roleId: 'technique',
+  },
+  {
+    username: 'jane',
+    password: 'password123member',
+    email: 'jane@gmail.fr',
+    roleId: 'commercial',
+  },
 ];
 
 router.get('/', authenticateJWT, async (req, res, next) => {
@@ -35,38 +42,49 @@ router.get('/', authenticateJWT, async (req, res, next) => {
 });
 
 router.post('/login', (req, res) => {
-
   // read username and password from request body
-  const { username, password } = req.body;
+  const { email, password, roleId } = req.body;
 
   // filter user from the users array by username and password
-  const user = users.find(u => { return u.username === username && u.password === password });
+  const user = users.find(u => {
+    return (
+      u?.email === email &&
+      u.password === password &&
+      u.roleId === roleId.toLowerCase()
+    );
+  });
 
   if (user) {
-      // generate an access token
-      const accessToken = jwt.sign({ username: user.username, role: user.role }, accessTokenSecret, { expiresIn: '20m' });
-      const refreshToken = jwt.sign({ username: user.username, role: user.role }, refreshTokenSecret);
+    // generate an access token
+    const accessToken = jwt.sign(
+      { username: user.username, role: user.roleId },
+      accessTokenSecret,
+      { expiresIn: '20m' }
+    );
+    const refreshToken = jwt.sign(
+      { username: user.username, role: user.roleId },
+      refreshTokenSecret
+    );
 
-      refreshTokens.push(refreshToken);
+    refreshTokens.push(refreshToken);
 
-      res.json({
-          accessToken,
-          refreshToken
-      });
+    res.status(200).json({
+      accessToken,
+      refreshToken,
+    });
   } else {
-      res.send('Username or password incorrect');
+    res.status(404).send('Username or password incorrect');
   }
 });
-
 
 router.post('/create', authenticateJWT, async (req, res, next) => {
   try {
     const userInput: IUser = req.body;
+    console.log(userInput);
+
     const user = await createUser(userInput);
     res.json(user);
   } catch (err: any) {
-    console.log(err.meta);
-
     if (err.meta.field_name == 'User_roleId_fkey (index)')
       res.json("User's role not found");
     else if (err.meta.target == 'User_email_key')
@@ -86,6 +104,8 @@ router.get('/:id', authenticateJWT, async (req, res, next) => {
 
 router.put('/:id', authenticateJWT, async (req, res, next) => {
   try {
+    console.log(req.body);
+
     const user = await updateUser(req.params.id, req.body);
     res.json(user);
   } catch (err) {
