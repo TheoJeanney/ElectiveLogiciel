@@ -22,6 +22,8 @@ export const authenticateJWT = (req: any, res: any, next: any) => {
           next();
         }
       );
+    } else {
+      return res.sendStatus(403).send('No token provided');
     }
   } else {
     res.sendStatus(401);
